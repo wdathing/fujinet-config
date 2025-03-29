@@ -116,20 +116,17 @@ void hosts_and_devices_edit_host_slot(int i)
 void hosts_and_devices_edit_host_slot(unsigned char i)
 #endif
 {
-#ifdef _CMOC_VERSION_
-  unsigned int o;
-#else
   unsigned char o;
-#endif
   HostSlot orig_host;
 
   if (strlen((const char *)hostSlots[i]) == 0)
   {
+  
     screen_hosts_and_devices_clear_host_slot(i);
     o = 0;
   }
   else
-    o = strlen((const char *)hostSlots[i]);
+    o = (unsigned char)strlen((const char *)hostSlots[i]);
 
   screen_hosts_and_devices_edit_host_slot(i);
   // FRUSTRATINGLY the signature is void return, so noone ever knows if the return was good or bad
@@ -170,12 +167,14 @@ void hosts_and_devices_hosts(void)
     hd_subState = input_hosts_and_devices_hosts();
 }
 
+#ifndef _CMOC_VERSION_
 void hosts_and_devices_long_filename(void)
 {
   const char *f = io_get_device_filename(selected_device_slot);
 
   screen_hosts_and_devices_long_filename(f);
 }
+#endif
 
 void hosts_and_devices_eject(unsigned char ds)
 {
@@ -185,7 +184,9 @@ void hosts_and_devices_eject(unsigned char ds)
   io_put_device_slots(&deviceSlots[0]);
   io_get_device_slots(&deviceSlots[0]);
   screen_hosts_and_devices_eject(ds);
+#ifndef _CMOC_VERSION_  
   hosts_and_devices_long_filename();
+#endif
 }
 
 void hosts_and_devices_devices_clear_all(void)
@@ -207,7 +208,9 @@ void hosts_and_devices_devices(void)
 
   io_update_devices_enabled(&deviceEnabled[0]);
   screen_hosts_and_devices_devices();
+#ifndef _CMOC_VERSION_    
   hosts_and_devices_long_filename();
+#endif
 
   while (hd_subState == HD_DEVICES)
     hd_subState = input_hosts_and_devices_devices();

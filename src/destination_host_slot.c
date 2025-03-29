@@ -89,6 +89,8 @@
 DHSubState dh_subState;
 
 extern HostSlot hostSlots[8];
+
+#ifndef _CMOC_VERSION_      
 extern char copy_destination_path[128];
 extern unsigned char copy_host_slot;
 extern bool copy_mode;
@@ -146,3 +148,4 @@ void destination_host_slot(void)
       }
     }
 }
+#endif

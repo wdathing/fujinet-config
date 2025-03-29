@@ -113,6 +113,7 @@ void select_slot_init()
 
 void select_slot_display()
 {
+#ifndef _CMOC_VERSION_  
   if (create==true)
     {
       char dispPath[42];
@@ -121,6 +122,7 @@ void select_slot_display()
       screen_select_slot(dispPath);
     }
   else
+#endif  
     {
       io_open_directory(selected_host_slot,path,filter);
 
@@ -167,7 +169,7 @@ void select_slot_done()
 #endif
 
   memset(filename,0,sizeof(filename));
-
+#ifndef _CMOC_VERSION_
   if (create==true)
   {
     create=false; // we're done with this until next time.
@@ -201,6 +203,7 @@ void select_slot_done()
 #endif
   }
   else
+#endif  
   {
     strcat(filename,path);
 

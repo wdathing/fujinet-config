@@ -97,8 +97,9 @@ void perform_copy(void)
   strcat(copySpec, "|");
   strcat(copySpec, path);
   strcat(copySpec,source_filename);
-  
+#ifndef _CMOC_VERSION_
   screen_perform_copy((char *)hostSlots[copy_host_slot],(char *)source_path,(char *)hostSlots[selected_host_slot],(char *)path);
+#endif
 
   io_copy_file(copy_host_slot, selected_host_slot);
 

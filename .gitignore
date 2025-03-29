@@ -55,6 +55,7 @@ dist/rsniff.com
 debug.scr
 Makefile.options
 obj
+*.o
 
 # apple distribution
 dist.apple2/*.jar

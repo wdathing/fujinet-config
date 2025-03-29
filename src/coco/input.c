@@ -72,7 +72,9 @@ char oc=0;
 
 void input_cursor(char x, char y)
 {
-  screen_put(x,y,0xAF); // Blue cursor
+//  screen_put(x,y,0xAF); // Blue cursor
+  moveCursor(x,y);
+  animateCursor();
 }
 
 void input_line(unsigned char x, unsigned char y, char *c, unsigned char l, bool password)
@@ -224,6 +226,9 @@ WSSubState input_set_wifi_select(void)
       break;
     case 0x0A:
       bar_down();
+      break;
+    case 0x03:
+      return WS_DONE;
       break;
     default:
       return WS_SELECT;

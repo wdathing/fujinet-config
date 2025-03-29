@@ -7,11 +7,15 @@
 #include <cmoc.h>
 #include "bar.h"
 #include "stdbool.h"
+#include "hirestxt-0.5.0/hirestxt.h"
+
 
 /**
  * static local variables for bar y, max, and index.
  */
 static int bar_y=3, bar_c=1, bar_m=1, bar_i=0, bar_oldi=0;
+static unsigned char bar_visible=false;
+extern unsigned char scrn_lines, scrn_cols, bHires;
 
 /**
  * Set up bar and start display on row
@@ -27,30 +31,37 @@ void bar_set(unsigned char y, unsigned char c, unsigned char m, unsigned char i)
   bar_m = (m == 0 ? 0 : m-1);
   bar_i = i;
   bar_oldi = bar_i;
+  bar_visible = false;
   bar_update();
 }
 
 void bar_clear(bool old)
 {
   unsigned char *sp = (unsigned char *)0x400;
-  int yo = bar_y * 32;
-  int io = (old ? bar_oldi*32 : bar_i*32);
+  int yo = bar_y * scrn_cols;
+  int io = (old ? bar_oldi*scrn_cols : bar_i*scrn_cols);
   
-  if (old)
-    {
-      bar_draw(bar_y+bar_oldi,true);
-    }
-  else
-    {
-      bar_draw(bar_y+bar_i,true);
-    }
-
-  if (bar_c != 0)
+  if (bHires==true)
   {
-      sp += yo+io;
-      *sp &= 0xBF;
+    bar_draw(bar_y, old);
   }
-  
+  else
+  {
+    if (old)
+      {
+        bar_draw(bar_y+bar_oldi,true);
+      }
+    else
+      {
+        bar_draw(bar_y+bar_i,true);
+      }
+
+    if (bar_c != 0)
+    {
+        sp += yo+io;
+        *sp &= 0xBF;
+    }
+  }
 }
 
 /**
@@ -63,19 +74,27 @@ void bar_draw(int y, bool clear)
 
   sp += o;
 
-  for (int i=0;i<32;i++)
-    {
-      if (clear)
-	{
-	  *sp |= 0x40; // Set bit 6
-	  sp++;
-	}
+  for (int i=0;i<scrn_cols;i++)
+  {
+      if (bHires==true)
+      {
+        moveCursor(i,y);
+        invertPixelsAtCursor();
+      }
       else
-	{
-	  *sp &= 0xBF; // Clear bit 6
-	  sp++;
-	}
-    }
+      {
+          if (clear)
+          {
+            *sp |= 0x40; // Set bit 6
+            sp++;
+          }
+              else
+          {
+            *sp &= 0xBF; // Clear bit 6
+            sp++;
+          }
+      }    
+  }
 }
 
 /**
@@ -129,8 +148,10 @@ void bar_jump(int i)
  */
 void bar_update(void)
 {  
-  bar_clear(true);
+  if (bar_visible==true)
+    bar_clear(true);
   bar_draw(bar_y+bar_i,false);  
+  bar_visible = true;
 }
 
 #endif

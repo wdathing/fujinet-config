@@ -113,12 +113,14 @@ void run(void)
 		case SELECT_SLOT:
 			select_slot();
 			break;
+#ifndef _CMOC_VERSION_			
 		case DESTINATION_HOST_SLOT:
 			destination_host_slot();
 			break;
 		case PERFORM_COPY:
 			perform_copy();
 			break;
+#endif			
 		case SHOW_INFO:
 			show_info();
 			break;

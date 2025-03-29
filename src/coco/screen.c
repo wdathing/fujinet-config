@@ -11,6 +11,7 @@
 
 #include <cmoc.h>
 #include <coco.h>
+#include "hirestxt-0.5.0/hirestxt.h"
 #include "screen.h"
 #include "io.h"
 #include "globals.h"
@@ -24,14 +25,29 @@ unsigned char *video_ptr;  // a pointer to the memory address containing the scr
 unsigned char *cursor_ptr; // a pointer to the current cursor position on the screen
 char _visibleEntries;
 extern bool copy_mode;
-char text_empty[] = "Empty";
-char fn[256];
+//char fn[256];
 extern HDSubState hd_subState;
 extern DeviceSlot deviceSlots[NUM_DEVICE_SLOTS];
 extern HostSlot hostSlots[8];
 
 char uppercase_tmp[32]; // temp space for strupr(s) output.
                                // so original strings doesn't get changed.
+
+unsigned char scrn_lines=24;
+unsigned char scrn_cols=42;
+unsigned char bHires=true;
+
+void mylocate(unsigned char x, unsigned char y)
+{
+#if 0
+  if(!hires txt mode)  
+  {
+    locate(x,y);
+  }
+  else
+#endif
+  moveCursor(x,y);
+}
 
 char *screen_upper(char *s)
 {
@@ -48,12 +64,14 @@ int screen_offset(int x, int y)
 
 void screen_add_shadow(int y, int c)
 {
+  return;
   unsigned char *p = (unsigned char *)SCREEN_RAM_TOP + screen_offset(0,y);
 
   *p = (unsigned char)c | 0x0b;  
   memset(p+1,c | 0x03, 31);
 }
 
+#if 0
 byte screen_get(int x, int y)
 {
   int o = screen_offset(x,y);
@@ -73,17 +91,18 @@ void screen_put(int x, int y, byte c)
 
   *p = c;
 }
+#endif
 
 void screen_mount_and_boot()
 {
-  cls(1);
+  pcls(1);
   printf("MOUNTING ALL SLOTS...\n");
 }
 
 void screen_set_wifi(AdapterConfig *ac)
 {
-  cls(6);
-  locate(0,0);
+  pcls(6);
+  mylocate(0,0);
   printf("%32s","WELCOME TO FUJINET");
   printf("%15s%02x:%02x:%02x:%02x:%02x:%02x","MAC:",
 	 ac->macAddress[0],ac->macAddress[1],ac->macAddress[2],ac->macAddress[3],ac->macAddress[4],ac->macAddress[5]);
@@ -97,7 +116,7 @@ void screen_set_wifi_display_ssid(char n, SSIDInfo *s)
   char meter[4]={0x20,0x20,0x20,0x00};
   char ds[32];
 
-  memset(ds,0x20,32);
+  //memset(ds,0x20,32);
   strncpy(ds,s->ssid,32);
 
   if (s->rssi > -50)
@@ -116,14 +135,14 @@ void screen_set_wifi_display_ssid(char n, SSIDInfo *s)
       meter[0] = '*';
     }
 
-  locate(0,n+2);  printf("%-32s",screen_upper(ds));
-  locate(28,n+2); printf("%s",meter);
+  mylocate(0,n+2);  printf("%-32s",screen_upper(ds));
+  mylocate(28,n+2); printf("%s",meter);
 }
 
 void screen_set_wifi_select_network(unsigned char nn)
 {
-  locate(0,14);
-  printf("        up/down TO SELECT       ");
+  mylocate(0,14);
+  printf(" up/down TO SELECT   break ABORT");
   printf("hIDDEN SSID rESCAN enter SELECT");
   bar_draw(0,false);
   bar_set(2,1,nn,0);
@@ -133,15 +152,16 @@ void screen_set_wifi_select_network(unsigned char nn)
 
 void screen_set_wifi_custom(void)
 {
-  locate(0,14);
+  mylocate(0,scrn_lines-2);
   printf("  ENTER NAME OF HIDDEN NETWORK  ");
   printf("%31s","");
 }
 
 void screen_set_wifi_password(void)
 {
-  locate (0,14);
+  mylocate (0,scrn_lines-2);
   printf("ENTER NET PASSWORD, PRESS enter.");
+  mylocate (0,scrn_lines-1);
   printf("%31s","");
 }
 
@@ -151,7 +171,7 @@ void screen_set_wifi_password(void)
  */
 void screen_show_info(int printerEnabled, AdapterConfig *ac)
 {
-  cls(7);
+  pcls(7);
   printf("     FUJINET CONFIGURATION      ");
   printf("%32s","SSID:");
   printf("%32s",screen_upper(ac->ssid));
@@ -193,14 +213,14 @@ void screen_select_slot(const char *e)
     byte *filename;
   } *i = (struct _additl_info *)e;
   
-  cls(4);
+  pcls(4);
 
   printf("%32s","PLACE IN DEVICE SLOT:");
   bar_draw(0,false);
 
   screen_hosts_and_devices_device_slots(1,&deviceSlots[0],&deviceEnabled[0]);
 
-  locate(0,6);
+  mylocate(0,6);
   printf("%32s","FILE DETAILS");
   bar_draw(6,false);
 
@@ -210,7 +230,7 @@ void screen_select_slot(const char *e)
 
   printf("%96s",screen_upper((char *)&e[13]));
 
-  locate(0,13);
+  mylocate(0,scrn_lines-2);
   printf("   arrow keys  TO SELECT SLOT   ");
   printf(" enter R/O w R/W OR break ABORT ");
 
@@ -247,7 +267,7 @@ void screen_select_slot_build_eos_directory_creating(void)
 
 void screen_select_file(void)
 {
-  cls(8);
+  pcls(8);
   printf("%32s","OPENING");
 
   screen_add_shadow(2,ORANGE);  
@@ -255,15 +275,18 @@ void screen_select_file(void)
 
 void screen_select_file_display(char *p, char *f)
 {
-  cls(8);
-  locate(0,0); printf("%-32s",screen_upper(selected_host_name));
-  locate(0,1);
+  pcls(8);
+  mylocate(0,0); printf("%-32s",screen_upper(selected_host_name));
+  mylocate(0,1);
 
   if (f[0]==0x00)
+  {
       printf("%-32s",screen_upper(p));
-  else {
-      printf("%-24s",screen_upper(p));
-	  locate(24,1);
+  }
+  else 
+  {
+     printf("%-24s",screen_upper(p));
+	  mylocate(scrn_lines,1);
 	  printf ("%8s",screen_upper(f));
   }
   screen_add_shadow(2,ORANGE);
@@ -279,33 +302,34 @@ void screen_select_file_clear_long_filename(void)
 
 void screen_select_file_filter(void)
 {
-    locate(0,14);
+    mylocate(0,scrn_lines-2);
     printf("%-63s","ENTER FILTER:");
-    locate(0,15);
+    mylocate(0,scrn_lines-1);
 }
 
 void screen_select_file_next(void)
 {
   screen_add_shadow(13,ORANGE);
-  locate(12,13); printf("[...]");
+  mylocate(12,13); printf("[...]");
 }
 
 void screen_select_file_prev(void)
 {
   screen_add_shadow(2,ORANGE);
-  locate(12,2); printf("[...]");
+  mylocate(12,2); printf("[...]");
 }
 
 void screen_select_file_display_entry(unsigned char y, const char *e, unsigned entryType)
 {
-  locate(0,y+3);
+  mylocate(0,y+3);
   printf("%-32s",screen_upper((char *)e)); // skip the first two chars from FN (hold over from Adam)
 }
 
 void screen_select_file_choose(char visibleEntries)
 {
-  locate(0,14);
+  mylocate(0,14);
   printf("%-32s","_ ../ up/dn MOVE ^up/^dn PAGE");
+#if 0  
   asm {
 	PSHS	B
 	LDB		#$1F
@@ -315,12 +339,14 @@ void screen_select_file_choose(char visibleEntries)
 	STB		$5D5
 	PULS	B
   }
-  
+#endif
+#if 0
   if (copy_mode==true)
     {
       printf("%-31s","enter OR break ABORT cOPY");
     }
   else
+#endif  
     {
       printf("%-31s","enter OR break fILTER nEW cOPY");
     }
@@ -331,15 +357,16 @@ void screen_select_file_choose(char visibleEntries)
     screen_add_shadow(3+visibleEntries,ORANGE);
 }
 
+#if 0
 void screen_select_file_new_type(void)
 {
 }
 
 void screen_select_file_new_size(unsigned char k)
 {
-    locate(0,14);
+    mylocate(0,14);
     printf("%-63s","ENTER # OF DRIVES TO CREATE");
-    locate(0,15);
+    mylocate(0,15);
 }
 
 void screen_select_file_new_custom(void)
@@ -348,21 +375,22 @@ void screen_select_file_new_custom(void)
 
 void screen_select_file_new_name(void)
 {
-    locate(0,14);
+    mylocate(0,14);
     printf("%-63s","ENTER FILENAME:");
-    locate(0,15);
+    mylocate(0,15);
 }
 
 void screen_select_file_new_creating(void)
 {
-    locate(0,13);
+    mylocate(0,13);
     printf("%-63s","CREATING IMAGE. PLEASE WAIT.");
-    locate(0,14);
+    mylocate(0,14);
 }
+#endif
 
 void screen_error(const char *msg)
 {
-  locate(0,15);
+  mylocate(0,scrn_lines-1);
   printf("%-31s",msg);
 }
 
@@ -382,19 +410,20 @@ void screen_hosts_and_devices(HostSlot *h, DeviceSlot *d, unsigned char *e)
 // Show the keys that are applicable when we are on the Hosts portion of the screen.
 void screen_hosts_and_devices_hosts()
 {
-  cls(3);
-  locate(0,0);
-  printf("%32s","host\x80slots");
+  pcls(3);
+  mylocate(0,0);
+  printf("%32s","host slots");
   
-  memset(0x400,0xAF,22);
-  (*(unsigned char *)0x041a) = 0x20;
+//  memset(0x400,0xAF,22);
+//  (*(unsigned char *)0x041a) = 0x20;
 
-  locate(0,13);
-  printf("1-8 slot Edit ENTER browse Lobby");
-  printf("  Config  -> drives  BREAK quit");
+  mylocate(0,scrn_lines-3);
+  printf("1-8 slot Edit ENTER browse Lobby\r");
+  mylocate(0,scrn_lines-2);  
+  printf("  Config  -> drives  BREAK quit\r");
 
-  screen_add_shadow(9,BLUE);
-  screen_add_shadow(15,BLUE);
+//  screen_add_shadow(9,BLUE);
+//  screen_add_shadow(15,BLUE);
     
   screen_hosts_and_devices_host_slots(&hostSlots[0]);
   bar_set(1,1,8,selected_host_slot);
@@ -403,16 +432,16 @@ void screen_hosts_and_devices_hosts()
 // Show the keys that are applicable when we are on the Devices portion of the screen.
 void screen_hosts_and_devices_devices()
 {
-  cls(4);
-  locate(0,0); 
+  pcls(4);
+  mylocate(0,0); 
   printf("%32s","drive""\x80""slots");
-  memset(0x400,0xBF,21);
-  (*(unsigned char *)0x041a) = 0x20;
+  //memset(0x400,0xBF,21);
+  //(*(unsigned char *)0x041a) = 0x20;
   
-  locate(0,14);
-  printf("\x80\x80\x80\x31-8slotEditENTERbrowseLobby\x80\x80\x80\x80\x80\x80\x43onfigTABdrivesBREAKboot\x80\x80\x80");
+  mylocate(0,scrn_lines-2);
+  printf("31-8slotEditENTERbrowseLobby\x80\x80\x80\x80\x80\x80\x43onfigTABdrivesBREAKboot\x80\x80\x80");
 
-  locate(0,13);
+  mylocate(0,scrn_lines-3);
   printf("1-8 slot Eject  CLEAR  all slots");
   printf("<- hosts Read Write Config Lobby");
 
@@ -426,18 +455,19 @@ void screen_hosts_and_devices_devices()
 void screen_hosts_and_devices_host_slots(HostSlot *h)
 {
   byte *p = &h[0]; // We need this because cmoc doesn't like untangling multi-dimensional typedefs
-  byte *sp = (unsigned char *)SCREEN_RAM_TOP;
+  //byte *sp = (unsigned char *)SCREEN_RAM_TOP;
 
-  sp += 32;  // start one line down. 
-  locate(0,1); 
+  //sp += 32;  // start one line down. 
+  mylocate(0,1); 
 
   // Color the first column
   for (int i=0;i<8;i++)
     {
-        printf("%u%-31s",i+1,screen_upper((char *)p));
+      mylocate(0,1+i);
+      printf("%u%-31s",i+1,screen_upper((char *)p));
       p += 32;  // Next entry
-      *sp &= INVERSE_MASK;
-      sp += 32; // next line
+      //*sp &= INVERSE_MASK;
+      //sp += 32; // next line
     }
 }
 
@@ -470,7 +500,7 @@ void screen_hosts_and_devices_device_slots(unsigned char y, DeviceSlot *dslot, u
 
   for (int i=0;i<NUM_DEVICE_SLOTS;i++)
     {
-      locate(0,(unsigned char)i+1);
+      mylocate(0,(unsigned char)i+1);
       printf("%u%c",i,host_slot_char(dslot->hostSlot));
       printf("%c",device_slot_mode(dslot->mode));
       printf("%-29s",screen_upper((char *)dslot->file));
@@ -484,10 +514,16 @@ void screen_hosts_and_devices_device_slots(unsigned char y, DeviceSlot *dslot, u
 
 void screen_hosts_and_devices_devices_clear_all(void)
 {
-  locate(0,11);
+  mylocate(0,11);
   printf("EJECTING ALL... PLEASE WAIT.");
 }
 
+void screen_hosts_and_devices_eject(unsigned char ds)
+{
+  screen_hosts_and_devices_devices();
+}
+
+#if 1
 void screen_hosts_and_devices_clear_host_slot(int i)
 {
   // nothing to do, edit_line handles clearing correct space on screen, and doesn't touch the list numbers
@@ -498,11 +534,6 @@ void screen_hosts_and_devices_edit_host_slot(int i)
   // nothing to do, edit_line handles clearing correct space on screen, and doesn't touch the list numbers
 }
 
-void screen_hosts_and_devices_eject(unsigned char ds)
-{
-  screen_hosts_and_devices_devices();
-}
-
 void screen_hosts_and_devices_host_slot_empty(int hs)
 {
 }
@@ -510,12 +541,43 @@ void screen_hosts_and_devices_host_slot_empty(int hs)
 void screen_hosts_and_devices_long_filename(const char *f)
 {
 }
+#endif
+
+// Setup and show a PMODE 4 green/black graphics screen.
+//
+static void showPMode4ScreenAtBuffer(byte *screenBuffer)
+{
+    width(32);  // PMODE graphics will only appear from 32x16 (does nothing on CoCo 1&2)
+    pmode(4, screenBuffer);
+    pcls(255);
+    screen(1, 0);  // green/black
+}
+
 
 void screen_init(void)
 {
+#if 1
+  struct HiResTextScreenInit init =
+  {
+      42,  /* characters per row */
+      writeCharAt_42cols,  /* must be consistent with previous field */
+      (byte *) * (byte *) 0x00BC << 8,
+      TRUE,  /* redirects printf() to the 51x24 text screen */
+      (word *) 0x112,  /* pointer to a 60 Hz async counter (Color Basic's TIMER) */
+      0,  /* default cursor blinking rate */
+      NULL,  /* use inkey(), i.e., Color Basic's INKEY$ */
+      NULL,  /* no sound on '\a' */
+  };
+
   // TODO: figure out lowercase.
+  showPMode4ScreenAtBuffer(init.textScreenBuffer);
+
+
+  initHiResTextScreen(&init);
+#endif
 }
 
+#if 0
 void screen_destination_host_slot(char *h, char *p)
 {
 }
@@ -527,12 +589,13 @@ void screen_destination_host_slot_choose(void)
 void screen_perform_copy(char *sh, char *p, char *dh, char *dp)
 {
 }
+#endif
 
 void screen_connect_wifi(NetConfig *nc)
 {
-  cls(3);
-  locate(0,7);
-  printf("     CONNECTING TO NETWORK:     %32s",screen_upper(nc->ssid));
+  pcls(3);
+  mylocate((scrn_cols-23)/2,7);
+  printf("CONNECTING TO NETWORK:\r%32s",screen_upper(nc->ssid));
 
   screen_add_shadow(9,BLUE); // change to CYAN
 }

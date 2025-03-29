@@ -399,6 +399,7 @@ unsigned select_file_entry_type(void)
   return result; // Offset 10 = directory flag.
 }
 
+#ifndef _CMOC_VERSION_
 void select_file_new(void)
 {
   char f[128];
@@ -417,13 +418,11 @@ void select_file_new(void)
   screen_select_file_new_size(k);
   selected_size = input_select_file_new_size(k);
 
-#ifndef _CMOC_VERSION_
   if (selected_size == 1) // User selected custom
   {
     screen_select_file_new_custom();
     selected_size = input_select_file_new_custom();
   }
-#endif /* CMOC_VERSION */
   
   if (selected_size == 0) // Aborted from size
   {
@@ -453,6 +452,7 @@ void select_file_copy(void)
   old_pos = pos;
   state = DESTINATION_HOST_SLOT;
 }
+#endif 
 
 void select_file_done(void)
 {
@@ -532,12 +532,14 @@ void select_file(void)
     case SF_DEVANCE_FOLDER:
       select_file_devance();
       break;
+#ifndef _CMOC_VERSION_      
     case SF_NEW:
       select_file_new();
       break;
     case SF_COPY:
       select_file_copy();
       break;
+#endif      
     case SF_DONE:
       select_file_done();
       break;

@@ -3,19 +3,41 @@
 CC=cmoc
 AS=lwasm
 CP=cp
-CFLAGS=-c --dragon -DDRAGON
+MV=mv
+CFLAGS=-c --dragon -DDRAGON -O2
 ECHO=echo
 FIRMWARE_DIR="../fujinet-firmware"
 
-configd.bin: check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
-	$(CC) --dragon -o configd.bin check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
-	$(RM) autorund.dsk
-	decb dskini autorund.dsk
-	decb copy -t -0 dist.dragon/autoexec.bas autorund.dsk,AUTOEXEC.BAS
-	writecocofile autorund.dsk configd.bin
-	$(CP) autorund.dsk $(FIRMWARE_DIR)/data/webui/device_specific/BUILD_COCO/
-#	$(CP) autorund.dsk ~/tnfs/
+all: configd.bin configx.bin
+
+CONFIGOBJS = check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
+
+
+HIRESLIB = src/coco/hirestxt-0.5.0/libhirestxt_dgn.a 
+
+configd.bin: $(CONFIGOBJS)
+	$(CC) --dragon --raw -o configd.bin  $(HIRESLIB) $(CONFIGOBJS) 
 	$(ECHO) Now, Do a Upload Filesystem task.
+	rm -f autorund.vdk
+	dragondos new autorund.vdk 360 
+	dragondos list autorund.vdk
+	#for i in $^; do  dragondos insertbinary ./autorund.vdk $$i 0x2601 0x2601; done
+	dragondos insertbinary ./autorund.vdk ./configd.bin 0x2601 0x2601
+	dragondos list autorund.vdk
+	$(CP) autorund.vdk ~/tnfs/	
+	$(CP) autorund.vdk ../original/data/webui/device_specific/BUILD_COCO/
+	$(CP) autorund.vdk ../original/data/BUILD_COCO/
+	$(CP) dist.dragon/AUTOLOAD.DWL ../original/data/BUILD_COCO/
+	$(CP) dist.dragon/AUTOLOAD.DWL ../original/data/webui/device_specific/BUILD_COCO/
+
+	$(ECHO) Now, Do a Upload Filesystem task.
+
+# One option for autoload is to just create the config file as a dragon binary and load this with the DW4 named object mechanism
+#
+configx.bin:  check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
+	$(CC) --verbose -O2 --org=2601 --limit=7800 --dragon -o configx.bin $(HIRESLIB) check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
+#	$(CP) AUTOLOAD.DWL ../original/data/BUILD_COCO/AUTOLOAD.DWL
+#	$(CP) AUTOLOAD.DWL ../original/data/webui/device_specific/BUILD_COCO/AUTOLOAD.DWL
 
 pause.o: src/coco/pause.c
 	$(CC) $(CFLAGS) src/coco/pause.c
@@ -75,4 +97,7 @@ clean:
 	$(RM) *.o
 	$(RM) coco/*.o
 	$(RM) config.bin
-	$(RM) autorun.dsk
+	$(RM) autorund.vdk
+	$(RM) AUTOLOAD.DWL
+
+
