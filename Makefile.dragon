@@ -4,7 +4,7 @@ CC=cmoc
 AS=lwasm
 CP=cp
 MV=mv
-CFLAGS=-c --dragon -DDRAGON -O2
+CFLAGS=-c --dragon -DDRAGON -O2 --org=2800
 ECHO=echo
 FIRMWARE_DIR="../fujinet-firmware"
 
@@ -28,8 +28,9 @@ configd.bin: $(CONFIGOBJS)
 	$(CP) autorund.vdk ~/tnfs/	
 	$(CP) autorund.vdk ../fujinet-firmware/data/webui/device_specific/BUILD_COCO/
 	$(CP) autorund.vdk ../fujinet-firmware/data/BUILD_COCO/
-	$(CP) dist.dragon/AUTOLOAD.DWL ../original/data/BUILD_COCO/
-	$(CP) dist.dragon/AUTOLOAD.DWL ../original/data/webui/device_specific/BUILD_COCO/
+	$(CP) configd.bin AUTOLOAD.DWL
+	$(CP) AUTOLOAD.DWL ../fujinet-firmware/data/BUILD_COCO/
+	$(CP) AUTOLOAD.DWL ../fujinet-firmware/data/webui/device_specific/BUILD_COCO/
 
 	$(ECHO) Now, Do a Upload Filesystem task.
 
@@ -37,7 +38,7 @@ configd.bin: $(CONFIGOBJS)
 #
 configx.bin:  check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
 	$(CC) --verbose -O2 --org=2601 --limit=7800 --dragon -o configx.bin $(HIRESLIB) check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
-	$(CP) configx.bin AUTOLOAD.DWL
+#	$(CP) configx.bin AUTOLOAD.DWL
 #	$(CP) AUTOLOAD.DWL ../original/data/BUILD_COCO/AUTOLOAD.DWL
 #	$(CP) AUTOLOAD.DWL ../original/data/webui/device_specific/BUILD_COCO/AUTOLOAD.DWL
 
