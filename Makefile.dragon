@@ -4,28 +4,44 @@ CC=cmoc
 AS=lwasm
 CP=cp
 MV=mv
-CFLAGS=-c --dragon -DDRAGON -O2 --no-relocate
 ECHO=echo
 FIRMWARE_DIR="../fujinet-firmware"
+CURRENT_TARGET := coco
 
 all: configd.bin configx.bin
 
-CONFIGOBJS = check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
+CONFIGOBJS = check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o strendswith.o pause.o
 
+FUJINET_LIB_VERSION = 4.7.9
+FUJINET_LIB = fujinet-lib
+
+FUJINET_LIB_VERSION_DIR = $(FUJINET_LIB)/$(FUJINET_LIB_VERSION)-$(CURRENT_TARGET)
+FUJINET_LIB_PATH = $(FUJINET_LIB_VERSION_DIR)/fujinet-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).lib
+FUJINET_LIB_DOWNLOAD_URL = https://github.com/FujiNetWIFI/fujinet-lib/releases/download/v$(FUJINET_LIB_VERSION)/fujinet-lib-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).zip
+FUJINET_LIB_DOWNLOAD_FILE = $(FUJINET_LIB)/fujinet-lib-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).zip
+FUJINET_LIB_BASENAME := $(notdir $(FUJINET_LIB_PATH))
+FUJINET_LIB_SYMLINK  := libfujinet-$(CURRENT_TARGET)-$(FUJINET_LIB_VERSION).lib.a
+
+LIMITFLAGS=--org=0E00 --limit=7C00
+
+LIBS=-L $(FUJINET_LIB_VERSION_DIR) -l$(FUJINET_LIB_BASENAME)
+
+CFLAGS=-c --dragon -DDRAGON -DUSING_FUJINET_LIB -O2 --no-relocate -I$(FUJINET_LIB_VERSION_DIR)
 
 #HIRESLIB = src/coco/hirestxt-0.5.0/libhirestxt_dgn.a 
 
 configd.bin: $(CONFIGOBJS)
-	$(CC) --dragon --org=2601 --limit=7800 -O2 --no-relocate -o configd.bin  $(CONFIGOBJS) 
+	$(CC) --verbose -O2 --dragon $(LIMITFLAGS) -o $@ $^ $(LIBS)
+	#$(CC) --dragon --org=2601 --limit=7800 -O2 --no-relocate -o configd.bin  $(CONFIGOBJS) 
 	#$(CC) --dragon --raw -o configd.bin  $(HIRESLIB) $(CONFIGOBJS) 
 	$(ECHO) Now, Do a Upload Filesystem task.
 	rm -f autorund.vdk
-	dragondos new autorund.vdk 360 
+	dragondos new autorund.vdk 180 
 	dragondos list autorund.vdk
 	#for i in $^; do  dragondos insertbinary ./autorund.vdk $$i 0x2601 0x2601; done
 	dragondos insertbinary ./autorund.vdk ./configd.bin 0x2601 0x2601
 	dragondos list autorund.vdk
-	$(CP) autorund.vdk ~/tnfs/	
+	$(CP) autorund.vdk /tnfs/	
 	$(CP) autorund.vdk ../fujinet-firmware/data/webui/device_specific/BUILD_COCO/
 	$(CP) autorund.vdk ../fujinet-firmware/data/BUILD_COCO/
 	$(CP) configd.bin AUTOLOAD.DWL
@@ -36,66 +52,16 @@ configd.bin: $(CONFIGOBJS)
 
 # One option for autoload is to just create the config file as a dragon binary and load this with the DW4 named object mechanism
 #
-configx.bin:  check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
-	$(CC) --verbose -O2 --dragon -o configx.bin $(HIRESLIB) check_wifi.o connect_wifi.o destination_host_slot.o hosts_and_devices.o main.o perform_copy.o select_file.o select_slot.o set_wifi.o show_info.o bar.o die.o input.o io.o mount_and_boot.o screen.o strrchr.o pause.o
+#configx.bin:  $(CONFIGOBJS)
+#	$(CC) --verbose -O2 --dragon -o configx.bin $^ $(HIRESLIB)  $(LIBS) 
 #	--org=2601 --limit=7800 
 #	$(CP) configx.bin AUTOLOAD.DWL
 #	$(CP) AUTOLOAD.DWL ../original/data/BUILD_COCO/AUTOLOAD.DWL
 #	$(CP) AUTOLOAD.DWL ../original/data/webui/device_specific/BUILD_COCO/AUTOLOAD.DWL
 
-pause.o: src/coco/pause.c
-	$(CC) $(CFLAGS) src/coco/pause.c
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-strrchr.o: src/coco/strrchr.c
-	$(CC) $(CFLAGS) src/coco/strrchr.c
-
-check_wifi.o: src/check_wifi.c
-	$(CC) $(CFLAGS) src/check_wifi.c
-
-connect_wifi.o: src/connect_wifi.c
-	$(CC) $(CFLAGS) src/connect_wifi.c
-
-destination_host_slot.o: src/destination_host_slot.c
-	$(CC) $(CFLAGS) src/destination_host_slot.c
-
-hosts_and_devices.o: src/hosts_and_devices.c
-	$(CC) $(CFLAGS) src/hosts_and_devices.c
-
-main.o: src/main.c
-	$(CC) $(CFLAGS) src/main.c
-
-perform_copy.o: src/perform_copy.c
-	$(CC) $(CFLAGS) src/perform_copy.c
-
-select_file.o: src/select_file.c
-	$(CC) $(CFLAGS) src/select_file.c
-
-select_slot.o: src/select_slot.c
-	$(CC) $(CFLAGS) src/select_slot.c
-
-set_wifi.o: src/set_wifi.c
-	$(CC) $(CFLAGS) src/set_wifi.c
-
-show_info.o: src/show_info.c
-	$(CC) $(CFLAGS) src/show_info.c
-
-bar.o: src/coco/bar.c
-	$(CC) $(CFLAGS) src/coco/bar.c
-
-die.o: src/coco/die.c
-	$(CC) $(CFLAGS) src/coco/die.c
-
-input.o: src/coco/input.c
-	$(CC) $(CFLAGS) src/coco/input.c
-
-io.o: src/coco/io.c
-	$(CC) $(CFLAGS) src/coco/io.c
-
-mount_and_boot.o: src/coco/mount_and_boot.c
-	$(CC) $(CFLAGS) src/coco/mount_and_boot.c
-
-screen.o: src/coco/screen.c
-	$(CC) $(CFLAGS) src/coco/screen.c
 
 clean:
 	$(RM) *.o
@@ -104,4 +70,30 @@ clean:
 	$(RM) autorund.vdk
 	$(RM) AUTOLOAD.DWL
 
+get_fujinet_lib:
+	@if [ ! -f "$(FUJINET_LIB_DOWNLOAD_FILE)" ]; then \
+		if [ -d "$(FUJINET_LIB_VERSION_DIR)" ]; then \
+		  echo "A directory already exists with version $(FUJINET_LIB_VERSION) - please remove it first"; \
+			exit 1; \
+		fi; \
+		HTTPSTATUS=$$(curl -Is $(FUJINET_LIB_DOWNLOAD_URL) | head -n 1 | awk '{print $$2}'); \
+		if [ "$${HTTPSTATUS}" == "404" ]; then \
+			echo "ERROR: Unable to find file $(FUJINET_LIB_DOWNLOAD_URL)"; \
+			exit 1; \
+		fi; \
+		echo "Downloading fujinet-lib for $(CURRENT_TARGET) version $(FUJINET_LIB_VERSION) from $(FUJINET_LIB_DOWNLOAD_URL)"; \
+		mkdir -p $(FUJINET_LIB); \
+		curl -L $(FUJINET_LIB_DOWNLOAD_URL) -o $(FUJINET_LIB_DOWNLOAD_FILE); \
+		echo "Unzipping to $(FUJINET_LIB)"; \
+		unzip -o $(FUJINET_LIB_DOWNLOAD_FILE) -d $(FUJINET_LIB_VERSION_DIR); \
+		echo "Unzip complete."; \
+		cd "$(FUJINET_LIB_VERSION_DIR)" && ln -sf "$(FUJINET_LIB_BASENAME)" "$(FUJINET_LIB_SYMLINK)" ; \
+	fi
 
+$(R2R_DIR):
+	mkdir -p $@
+
+%.o: %.c get_fujinet_lib
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+vpath %.c src src/coco
