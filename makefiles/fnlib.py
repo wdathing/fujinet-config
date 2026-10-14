@@ -252,8 +252,15 @@ class LibLocator:
     os.makedirs(self.MV.FUJINET_LIB_DIR, exist_ok=True)
 
     for platform in self.possiblePlatforms:
-      self.MV.FUJINET_LIB_FILE = f"fujinet-{platform}-{self.MV.FUJINET_LIB_VERSION}.lib"
-      if not os.path.exists(os.path.join(self.MV.FUJINET_LIB_DIR, self.MV.FUJINET_LIB_FILE)):
+      # Check the real directory listing rather than assume a fixed name -
+      # a release can package its library as either `fujinet-coco-X.Y.Z.lib`
+      # or `libfujinet.coco.a` (see LIBRARY_REGEX above), and guessing the
+      # former unconditionally left FUJINET_LIB_FILE pointing at a filename
+      # that a newer, `libfujinet.*.a`-packaged release never actually
+      # extracts, which fixupLibraryFilename() then dutifully symlinks to
+      # nothing.
+      rxm = self.findLibrary(os.listdir(self.MV.FUJINET_LIB_DIR))
+      if not rxm:
         zip_path = f"fujinet-lib-{platform}-{self.MV.FUJINET_LIB_VERSION}.zip"
 
         if not self.MV.FUJINET_LIB_ZIP:
@@ -270,10 +277,13 @@ class LibLocator:
         with zipfile.ZipFile(self.MV.FUJINET_LIB_ZIP, "r") as zf:
           zf.extractall(self.MV.FUJINET_LIB_DIR)
 
-        return
+        rxm = self.findLibrary(os.listdir(self.MV.FUJINET_LIB_DIR))
 
-      #error_exit("Unable to download FujiNet library from", release_url)
+      if rxm:
+        self.MV.FUJINET_LIB_FILE = rxm.group(0)
       return
+
+    return
 
   def gitClone(self, url):
     global FUJINET_CACHE_DIR
